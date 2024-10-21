@@ -13,14 +13,11 @@ canvas.width = 256;
 canvas.height = 256;
 const ctx = canvas.getContext("2d");
 const clear = document.createElement("button");
-
+const undo = document.createElement("button");
+const redo = document.createElement("button");
 document.title = APP_NAME;
 app.innerHTML = APP_NAME;
 clear.innerHTML = "Clear";
-clear.addEventListener("click", () => {
-    clearCanvas()
-    deleteDisplay();    
-});
 
 let isDrawing = false;
 const cursor = { x: 0, y: 0 };
@@ -32,12 +29,34 @@ interface Point {
     y: number;
 }
 
+let redoStack: Point[][] = [];
 let displayList: Point[][] = [];
 let mousePoints: Array<Point> = [];
 // array of array of points [x1, y2, x2, y2]
 
 const drawingChanged = new Event("drawing-changed");
 // after each point dispatch a drawing changed event
+
+clear.addEventListener("click", () => {
+    clearCanvas()
+    deleteCanvasDetails();    
+});
+
+undo.innerHTML = "Undo";
+undo.addEventListener("click", () => {
+    if (displayList.length >= 1) {
+        undoDraw();
+        canvas.dispatchEvent(drawingChanged);
+    }
+});
+
+redo.innerHTML = "Redo";
+redo.addEventListener("click", () => {
+    if (redoStack.length >= 1) {
+        redoDraw();
+        canvas.dispatchEvent(drawingChanged);
+    }
+});
 
 canvas.addEventListener("mousedown", (e) => {
     // I took reference from the mouse move event documentation
@@ -61,9 +80,9 @@ canvas.addEventListener("mousemove", (e: MouseEvent) => {
 canvas.addEventListener("mouseup", () => {
     // when the user lets go of the mouse finish the line and reset the cursor
     if (isDrawing) {
-        isDrawing = false;
-        displayList.push(mousePoints);
+        addLine();
         mousePoints = [];
+        isDrawing = false;
       }
 })
 
@@ -81,7 +100,9 @@ function addPoint(x: number, y: number) {
 
 function drawCurrentLine() {
     // draws a line made from the current set of mousePoints
-    draw(mousePoints);
+    if (mousePoints.length > 1) {
+        draw(mousePoints);
+    }
 }
 
 
@@ -99,7 +120,7 @@ function redrawLines() {
 function draw(lineArray: Point[]) {
 // I referenced the mousemoveEvent drawline() function
 // https://developer.mozilla.org/en-US/docs/Web/API/Element/mousemove_event
-    if (lineArray) {
+    if (lineArray.length > 1) {
         const {x, y} = lineArray[0];
         ctx?.beginPath();
         ctx?.moveTo(x, y);
@@ -114,10 +135,33 @@ function clearCanvas() {
     ctx?.clearRect(0, 0, canvas.width, canvas.height);
 }
 
-function deleteDisplay() {
+function deleteCanvasDetails() {
     displayList = [];
+    clearRedoStack();
+}
+
+function addLine() {
+    displayList.push(mousePoints);
+    clearRedoStack();
+}
+
+function undoDraw() {
+    const lastElement: Point[] = displayList.pop()!;
+    redoStack.push(lastElement);
+}
+
+function clearRedoStack() {
+    redoStack = [];
+}
+
+function redoDraw() {
+    const lastElement: Point[] = redoStack.pop()!;
+    displayList.push(lastElement);
+    canvas.dispatchEvent(drawingChanged);
 }
 
 app.append(header);
 app.append(canvas);
 app.append(clear);
+app.append(undo);
+app.append(redo);
