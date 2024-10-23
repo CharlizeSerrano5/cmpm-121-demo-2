@@ -15,10 +15,17 @@ const ctx = canvas.getContext("2d");
 const clear = document.createElement("button");
 const undo = document.createElement("button");
 const redo = document.createElement("button");
+const thin = document.createElement("button");
+const thick = document.createElement("button");
+
+
 document.title = APP_NAME;
 app.innerHTML = APP_NAME;
 clear.innerHTML = "Clear";
 undo.innerHTML = "Undo";
+redo.innerHTML = "Redo";
+thin.innerHTML = "Thin";
+thick.innerHTML = "Thick";
 
 let isDrawing = false;
 const cursor = { x: 0, y: 0 };
@@ -39,13 +46,16 @@ interface Context {
 
 class Line implements Context {
     lineArray: Point[];
-    constructor(lineArray: Point[]) {
+    lineWidth: number;
+    constructor(lineArray: Point[], lineWidth: number) {
         this.lineArray = lineArray;
+        this.lineWidth = lineWidth;
     }
     display(context: CanvasRenderingContext2D): void {
         if (this.lineArray.length > 1) {
             const {x, y} = this.lineArray[0];
             context.beginPath();
+            context.lineWidth = this.lineWidth;
             context.moveTo(x, y);
             this.lineArray.forEach((point) => {
                 context.lineTo(point.x, point.y);
@@ -57,20 +67,23 @@ class Line implements Context {
 
 class Marker {
     position: Point;
-    constructor(position: Point) {
+    lineWidth: number;
+    constructor(position: Point, lineWidth: number) {
         this.position = position;
+        this.lineWidth = lineWidth;
         addPoint(this.position.x, this.position.y);
     }
     
     drag(x: number, y: number): void {
         // grows/extends the line as the user drags their mouse cursor
         addPoint(x, y);
-        const lineObject = new Line(mousePoints);
+        const lineObject = new Line(mousePoints, this.lineWidth);
         lineObject.display(ctx!);
     }
 }
 
 let marker : Marker;
+let lineWidth = 1;
 
 let redoStack: Array<Line> = [];
 let displayList: Array<Line> = [];
@@ -91,7 +104,6 @@ undo.addEventListener("click", () => {
     }
 });
 
-redo.innerHTML = "Redo";
 redo.addEventListener("click", () => {
     if (redoStack.length >= 1) {
         redoDraw();
@@ -99,13 +111,21 @@ redo.addEventListener("click", () => {
     }
 });
 
+thin.addEventListener("click", () => {
+    lineWidth = 0.5;
+})
+
+thick.addEventListener("click", () => {
+    lineWidth = 2;
+})
+
 canvas.addEventListener("mousedown", (e) => {
     // I took reference from the mouse move event documentation
     // https://developer.mozilla.org/en-US/docs/Web/API/Element/mousemove_event
     cursor.x = e.offsetX;
     cursor.y = e.offsetY;
     const position: Point = { x: cursor.x, y: cursor.y};
-    marker = new Marker(position);
+    marker = new Marker(position, lineWidth);
     // addPoint(cursor.x, cursor.y);
     isDrawing = true; // check if drawing when user has clicked
 });
@@ -161,7 +181,7 @@ function deleteCanvasDetails() {
 }
 
 function addLine() {
-    const lineObject = new Line(mousePoints);
+    const lineObject = new Line(mousePoints, lineWidth);
     displayList.push(lineObject);
     clearRedoStack();
 }
@@ -183,6 +203,8 @@ function redoDraw() {
 
 app.append(header);
 app.append(canvas);
+app.append(thin);
+app.append(thick);
 app.append(clear);
 app.append(undo);
 app.append(redo);
