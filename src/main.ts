@@ -18,6 +18,7 @@ const redo = document.createElement("button");
 document.title = APP_NAME;
 app.innerHTML = APP_NAME;
 clear.innerHTML = "Clear";
+undo.innerHTML = "Undo";
 
 let isDrawing = false;
 const cursor = { x: 0, y: 0 };
@@ -29,8 +30,43 @@ interface Point {
     y: number;
 }
 
-let redoStack: Point[][] = [];
-let displayList: Point[][] = [];
+interface Context {
+    // I used Brace and asked the question
+    // "How do I create a typescript interface that captures the idea that an object has a display method that accepts a CanvasRenderingContext2D argument?"
+    // https://chat.brace.tools/c/a3d15058-e589-4b5c-9859-d9529b2950b2
+    display(context: CanvasRenderingContext2D): void;
+}
+
+class Line implements Context {
+    lineArray: Point[];
+    constructor(lineArray: Point[]) {
+        this.lineArray = lineArray;
+    }
+    display(context: CanvasRenderingContext2D): void {
+        if (this.lineArray.length > 1) {
+            const {x, y} = this.lineArray[0];
+            context.beginPath();
+            context.moveTo(x, y);
+            this.lineArray.forEach((point) => {
+                context.lineTo(point.x, point.y);
+            })
+            context.stroke();
+        }
+    }
+}
+
+// class Marker {
+//     position: Point;
+//     constructor(position: Point) {
+//         this.position = position;
+//     }
+//     drag(x: number, y: number): void {
+//         // grows/extends the line as the user drags their mouse cursor
+//     }
+// }
+
+let redoStack: Array<Line> = [];
+let displayList: Array<Line> = [];
 let mousePoints: Array<Point> = [];
 // array of array of points [x1, y2, x2, y2]
 
@@ -42,7 +78,6 @@ clear.addEventListener("click", () => {
     deleteCanvasDetails();    
 });
 
-undo.innerHTML = "Undo";
 undo.addEventListener("click", () => {
     if (displayList.length >= 1) {
         undoDraw();
@@ -105,14 +140,14 @@ function drawCurrentLine() {
     }
 }
 
-
 function redrawLines() {
     // I took influence from the for loop in redraw() provided by professor in quant-paint
     // https://quant-paint.glitch.me/paint1.html
     // for every point that has been saved to the array begin the path 
     // displays the previous lines
     displayList.forEach((line) => {
-        draw(line);
+        // draw(line);
+        line.display(ctx!);
     })
     drawCurrentLine();
 }
@@ -141,12 +176,14 @@ function deleteCanvasDetails() {
 }
 
 function addLine() {
-    displayList.push(mousePoints);
+    const lineObject = new Line(mousePoints);
+    displayList.push(lineObject);
+    console.log('displayList: ', displayList);
     clearRedoStack();
 }
 
 function undoDraw() {
-    const lastElement: Point[] = displayList.pop()!;
+    const lastElement: Line = displayList.pop()!;
     redoStack.push(lastElement);
 }
 
@@ -155,7 +192,7 @@ function clearRedoStack() {
 }
 
 function redoDraw() {
-    const lastElement: Point[] = redoStack.pop()!;
+    const lastElement: Line = redoStack.pop()!;
     displayList.push(lastElement);
     canvas.dispatchEvent(drawingChanged);
 }
