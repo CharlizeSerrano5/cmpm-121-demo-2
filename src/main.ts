@@ -28,6 +28,7 @@ thin.innerHTML = "Thin";
 thick.innerHTML = "Thick";
 
 let isDrawing = false;
+let isPointing = false;
 const cursor = { x: 0, y: 0 };
 // I referenced code from https://quant-paint.glitch.me/paint1.html
 // to create a cursor and set it every time the mouse is being used
@@ -56,6 +57,7 @@ class Line implements Context {
             const {x, y} = this.lineArray[0];
             context.beginPath();
             context.lineWidth = this.lineWidth;
+            context.strokeStyle = "black";
             context.moveTo(x, y);
             this.lineArray.forEach((point) => {
                 context.lineTo(point.x, point.y);
@@ -82,7 +84,26 @@ class Marker {
     }
 }
 
+class Pointer implements Context{
+    position: Point;
+    constructor (position: Point) {
+        this.position = position;
+    }
+    display(context: CanvasRenderingContext2D): void {
+        // https://www.w3schools.com/graphics/canvas_circles.asp#:~:text=Draw%20a%20Full%20Circle,arc()%20%2D%20Define%20a%20circle
+        // I use w3schools to draw a circle
+        if (isPointing) {
+            context.beginPath();
+            context.arc(this.position.x, this.position.y, 40, 0, 2 * Math.PI);
+            context.lineWidth = 1;
+            context.strokeStyle = "red";
+            context.stroke();
+        }
+    } 
+}
+
 let marker : Marker;
+let pointer : Pointer;
 let lineWidth = 1;
 
 let redoStack: Array<Line> = [];
@@ -90,6 +111,7 @@ let displayList: Array<Line> = [];
 let mousePoints: Array<Point> = [];
 
 const drawingChanged = new Event("drawing-changed");
+const toolMoved = new Event("tool-moved");
 // after each point dispatch a drawing changed event
 
 clear.addEventListener("click", () => {
@@ -122,22 +144,32 @@ thick.addEventListener("click", () => {
 canvas.addEventListener("mousedown", (e) => {
     // I took reference from the mouse move event documentation
     // https://developer.mozilla.org/en-US/docs/Web/API/Element/mousemove_event
-    cursor.x = e.offsetX;
-    cursor.y = e.offsetY;
+    offsetCursor(e);
     const position: Point = { x: cursor.x, y: cursor.y};
     marker = new Marker(position, lineWidth);
-    // addPoint(cursor.x, cursor.y);
+    isPointing = false;
     isDrawing = true; // check if drawing when user has clicked
 });
 
+canvas.addEventListener("mouseenter", (e) => {
+    // https://developer.mozilla.org/en-US/docs/Web/API/Element/mouseenter_event
+    offsetCursor(e);
+    isPointing = true;
+    canvas.dispatchEvent(toolMoved);
+
+})
+
+canvas.addEventListener("mouseleave", () => {
+    isPointing = false;
+})
+
 canvas.addEventListener("mousemove", (e: MouseEvent) => {
     // if the user is continuously dragging their mouse then draw a line
+    offsetCursor(e);
+    canvas.dispatchEvent(toolMoved);
     if (isDrawing) {
         // save user's mouse positions into an array of arrays of points
         marker.drag(e.offsetX, e.offsetY);
-        // addPoint(e.offsetX, e.offsetY);
-        cursor.x = e.offsetX;
-        cursor.y = e.offsetY;
       }
 });
 
@@ -148,7 +180,17 @@ canvas.addEventListener("mouseup", () => {
         mousePoints = [];
         isDrawing = false;
       }
+    isPointing = true;
 })
+
+canvas.addEventListener("tool-moved", () => {
+    // draw a cursor 
+    const position: Point = {x: cursor.x, y: cursor.y};
+    pointer = new Pointer(position);
+    pointer.display(ctx!);
+    canvas.dispatchEvent(drawingChanged);
+})
+
 
 canvas.addEventListener("drawing-changed", () => {
     // clear and redraw the user's lines
@@ -168,7 +210,9 @@ function redrawLines() {
     displayList.forEach((line) => {
         line.display(ctx!);
     })
-    // drawCurrentLine();
+    if (pointer) {
+        pointer.display(ctx!);
+    }
 }
 
 function clearCanvas() {
@@ -199,6 +243,11 @@ function redoDraw() {
     const lastElement: Line = redoStack.pop()!;
     displayList.push(lastElement);
     canvas.dispatchEvent(drawingChanged);
+}
+
+function offsetCursor(e: MouseEvent) {
+    cursor.x = e.offsetX;
+    cursor.y = e.offsetY;
 }
 
 app.append(header);
