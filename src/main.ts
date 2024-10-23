@@ -55,20 +55,26 @@ class Line implements Context {
     }
 }
 
-// class Marker {
-//     position: Point;
-//     constructor(position: Point) {
-//         this.position = position;
-//     }
-//     drag(x: number, y: number): void {
-//         // grows/extends the line as the user drags their mouse cursor
-//     }
-// }
+class Marker {
+    position: Point;
+    constructor(position: Point) {
+        this.position = position;
+        addPoint(this.position.x, this.position.y);
+    }
+    
+    drag(x: number, y: number): void {
+        // grows/extends the line as the user drags their mouse cursor
+        addPoint(x, y);
+        const lineObject = new Line(mousePoints);
+        lineObject.display(ctx!);
+    }
+}
+
+let marker : Marker;
 
 let redoStack: Array<Line> = [];
 let displayList: Array<Line> = [];
 let mousePoints: Array<Point> = [];
-// array of array of points [x1, y2, x2, y2]
 
 const drawingChanged = new Event("drawing-changed");
 // after each point dispatch a drawing changed event
@@ -98,7 +104,9 @@ canvas.addEventListener("mousedown", (e) => {
     // https://developer.mozilla.org/en-US/docs/Web/API/Element/mousemove_event
     cursor.x = e.offsetX;
     cursor.y = e.offsetY;
-    addPoint(cursor.x, cursor.y);
+    const position: Point = { x: cursor.x, y: cursor.y};
+    marker = new Marker(position);
+    // addPoint(cursor.x, cursor.y);
     isDrawing = true; // check if drawing when user has clicked
 });
 
@@ -106,7 +114,8 @@ canvas.addEventListener("mousemove", (e: MouseEvent) => {
     // if the user is continuously dragging their mouse then draw a line
     if (isDrawing) {
         // save user's mouse positions into an array of arrays of points
-        addPoint(e.offsetX, e.offsetY);
+        marker.drag(e.offsetX, e.offsetY);
+        // addPoint(e.offsetX, e.offsetY);
         cursor.x = e.offsetX;
         cursor.y = e.offsetY;
       }
@@ -133,37 +142,13 @@ function addPoint(x: number, y: number) {
     canvas.dispatchEvent(drawingChanged);
 }
 
-function drawCurrentLine() {
-    // draws a line made from the current set of mousePoints
-    if (mousePoints.length > 1) {
-        draw(mousePoints);
-    }
-}
-
 function redrawLines() {
     // I took influence from the for loop in redraw() provided by professor in quant-paint
     // https://quant-paint.glitch.me/paint1.html
-    // for every point that has been saved to the array begin the path 
-    // displays the previous lines
     displayList.forEach((line) => {
-        // draw(line);
         line.display(ctx!);
     })
-    drawCurrentLine();
-}
-
-function draw(lineArray: Point[]) {
-// I referenced the mousemoveEvent drawline() function
-// https://developer.mozilla.org/en-US/docs/Web/API/Element/mousemove_event
-    if (lineArray.length > 1) {
-        const {x, y} = lineArray[0];
-        ctx?.beginPath();
-        ctx?.moveTo(x, y);
-        lineArray.forEach((point) => {
-            ctx?.lineTo(point.x, point.y);
-        })
-        ctx?.stroke();
-    }
+    // drawCurrentLine();
 }
 
 function clearCanvas() {
@@ -178,7 +163,6 @@ function deleteCanvasDetails() {
 function addLine() {
     const lineObject = new Line(mousePoints);
     displayList.push(lineObject);
-    console.log('displayList: ', displayList);
     clearRedoStack();
 }
 
