@@ -37,9 +37,10 @@ skull.innerHTML = "💀"
 let isDrawing = false;
 let isPointing = false;
 let isSticker = false;
-let isPlacing = true;
+let isPlacing = false;
 // https://www.javatpoint.com/typescript-union#:~:text=In%20other%20words%2C%20TypeScript%20can,')%20symbol%20between%20the%20types.
 let sticker: Sticker;
+let tempSticker: Sticker;
 
 const cursor = { x: 0, y: 0 };
 // I referenced code from https://quant-paint.glitch.me/paint1.html
@@ -162,8 +163,20 @@ class Sticker {
 
     }
     drag(x: number, y: number) {
-        console.log('is dragging')
-        ctx!.translate(x, y);
+        console.log('is dragging: ', x, y)
+        ctx!.save();
+        const offsetX = x - this.position.x;
+        const offsetY = y - this.position.y;
+        // https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/translate
+        ctx!.translate(offsetX, offsetY);
+        this.position.x = x;
+        this.position.y = y;
+        const stickerImage = new Image(this.position, this.image);
+        stickerImage.display(ctx!);
+        // redrawLines();
+        ctx!.resetTransform();
+        // https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/resetTransform
+        ctx!.restore();
     }
 }
 
@@ -176,9 +189,10 @@ let marker : Marker;
 let pointer : Pointer;
 let lineWidth = 1;
 
-let redoStack: Array<Line> = [];
-let displayList: Array<Line> = [];
-let stickerList: Array<Image> = [];
+
+let redoStack: Array<Line|Image> = [];
+let displayList: Array<Line|Image> = [];
+const stickerList: Array<Image> = [];
 
 let mousePoints: Array<Point> = [];
 
@@ -191,6 +205,7 @@ stickerImageList.map((item) => {
         console.log(`${item.name} has been clicked`)
         canvas.dispatchEvent(toolMoved);
         isPointing = false;
+        isDrawing = false;
         const position = { x: 123, y: 123 }
         isSticker = true;
         if (sticker && isSticker) {
@@ -218,7 +233,7 @@ undo.addEventListener("click", () => {
         undoDraw();
         canvas.dispatchEvent(drawingChanged);
     }
-    removeSticker();
+    // removeSticker();
 });
 
 redo.addEventListener("click", () => {
@@ -226,7 +241,7 @@ redo.addEventListener("click", () => {
         redoDraw();
         canvas.dispatchEvent(drawingChanged);
     }
-    removeSticker();
+    // removeSticker();
 });
 
 thin.addEventListener("click", () => {
@@ -247,17 +262,20 @@ canvas.addEventListener("mousedown", (e) => {
     const position: Point = { x: cursor.x, y: cursor.y};
     marker = new Marker(position, lineWidth);
     isPointing = false;
-    if (isSticker) {
-        // add a sticker
-        addSticker();
-        console.log('is showing');
-        isPlacing = true;
-        // removeSticker();
+    isDrawing = true; // check if drawing when user has clicked
 
-    } else {
-        isDrawing = true; // check if drawing when user has clicked
+    if (isSticker) {
+        isPlacing = true;
+        isDrawing = false;
+    }
+
+    if(isPlacing) {
+        console.log('we are placing')
+        tempSticker = new Sticker(position, sticker.image);
 
     }
+    debugShow();
+    // }
 });
 
 canvas.addEventListener("mouseenter", (e) => {
@@ -275,9 +293,9 @@ canvas.addEventListener("mousemove", (e: MouseEvent) => {
     // if the user is continuously dragging their mouse then draw a line
     offsetCursor(e);
     canvas.dispatchEvent(toolMoved);
-    if (isPlacing) {
-        console.log('has entered')
-        sticker.drag(e.offsetX, e.offsetY);
+    if (isPlacing && tempSticker) {
+        console.log('dragging has entered')
+        tempSticker.drag(e.offsetX, e.offsetY);
     } else if (isDrawing) {
         // save user's mouse positions into an array of arrays of points
         marker.drag(e.offsetX, e.offsetY);
@@ -288,7 +306,17 @@ canvas.addEventListener("mousemove", (e: MouseEvent) => {
 canvas.addEventListener("mouseup", () => {
     // when the user lets go of the mouse finish the line and reset the cursor
     isPlacing = false;
-    if (isDrawing) {
+    ctx!.restore();
+    if (isSticker) {
+        // add a sticker
+        addSticker();
+        console.log('place finished');
+        isPlacing = false;
+        // removeSticker();
+        debugShow();
+
+    } 
+    else if (isDrawing) {
         addLine();
         mousePoints = [];
         isDrawing = false;
@@ -320,15 +348,17 @@ function addPoint(x: number, y: number) {
 function redrawLines() {
     // I took influence from the for loop in redraw() provided by professor in quant-paint
     // https://quant-paint.glitch.me/paint1.html
+    console.log('displayList: ', displayList);
     displayList.forEach((line) => {
         line.display(ctx!);
     })
     if (pointer) {
         pointer.display(ctx!);
     }
-    stickerList.forEach((sticker) => {
-        sticker.display(ctx!);
-    })
+    // stickerList.forEach((sticker) => {
+    //     sticker.display(ctx!);
+    // })
+
 }
 
 function clearCanvas() {
@@ -347,19 +377,14 @@ function addLine() {
 }
 
 function addSticker() {
-    
-    const stickerPosition: Point = {
-        x: sticker.position.x,
-        y: sticker.position.y
-    }
-    const stickerImage = new Image(stickerPosition, sticker.image);
+    const stickerImage = new Image(tempSticker.position, sticker.image);
     stickerList.push(stickerImage);
-    // clearRedoStack();
+    displayList.push(stickerImage);
 }
 
 
 function undoDraw() {
-    const lastElement: Line = displayList.pop()!;
+    const lastElement = displayList.pop()!;
     redoStack.push(lastElement);
 }
 
@@ -367,8 +392,15 @@ function clearRedoStack() {
     redoStack = [];
 }
 
+function debugShow() {
+    console.log('isSticker: ', isSticker,' isPlacing: ', isPlacing, ' isDrawing: ', isDrawing);
+
+
+}
+
+
 function redoDraw() {
-    const lastElement: Line = redoStack.pop()!;
+    const lastElement = redoStack.pop()!;
     displayList.push(lastElement);
     canvas.dispatchEvent(drawingChanged);
 }
