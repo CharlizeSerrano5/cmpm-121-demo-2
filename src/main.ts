@@ -118,13 +118,13 @@ class Pointer implements Context{
         // https://www.w3schools.com/graphics/canvas_circles.asp#:~:text=Draw%20a%20Full%20Circle,arc()%20%2D%20Define%20a%20circle
         // I use w3schools to draw a circle
         if (isPointing) {
-            if (sticker && isSticker) {
+            if (sticker && isSticker && !isDrawing) {
                 const stickerImage = new Image(this.position, sticker.image);
                 stickerImage.display(ctx!);
                 sticker.position = {x: this.position.x, y: this.position.y};
             } else {
                 context.beginPath();
-                context.arc(this.position.x, this.position.y, 40, 0, 2 * Math.PI);
+                context.arc(this.position.x, this.position.y, lineWidth * 20, 0, 2 * Math.PI);
                 context.lineWidth = 1;
                 context.strokeStyle = "red";
                 context.stroke();
@@ -147,7 +147,6 @@ class Image implements Context {
         if (isSticker) {
             context.font = "30px serif";
             context.fillText(this.emoji, this.position.x, this.position.y);
-            console.log('is reached', this.position.x, this.position.y)
         }
     }
 }
@@ -163,7 +162,6 @@ class Sticker {
 
     }
     drag(x: number, y: number) {
-        console.log('is dragging: ', x, y)
         ctx!.save();
         const offsetX = x - this.position.x;
         const offsetY = y - this.position.y;
@@ -202,7 +200,6 @@ const toolMoved = new Event("tool-moved");
 
 stickerImageList.map((item) => {
     item.button.addEventListener("click", () => {
-        console.log(`${item.name} has been clicked`)
         canvas.dispatchEvent(toolMoved);
         isPointing = false;
         isDrawing = false;
@@ -268,14 +265,9 @@ canvas.addEventListener("mousedown", (e) => {
         isPlacing = true;
         isDrawing = false;
     }
-
-    if(isPlacing) {
-        console.log('we are placing')
+    if (isPlacing) {
         tempSticker = new Sticker(position, sticker.image);
-
     }
-    debugShow();
-    // }
 });
 
 canvas.addEventListener("mouseenter", (e) => {
@@ -294,7 +286,6 @@ canvas.addEventListener("mousemove", (e: MouseEvent) => {
     offsetCursor(e);
     canvas.dispatchEvent(toolMoved);
     if (isPlacing && tempSticker) {
-        console.log('dragging has entered')
         tempSticker.drag(e.offsetX, e.offsetY);
     } else if (isDrawing) {
         // save user's mouse positions into an array of arrays of points
@@ -310,11 +301,8 @@ canvas.addEventListener("mouseup", () => {
     if (isSticker) {
         // add a sticker
         addSticker();
-        console.log('place finished');
         isPlacing = false;
         // removeSticker();
-        debugShow();
-
     } 
     else if (isDrawing) {
         addLine();
@@ -348,17 +336,12 @@ function addPoint(x: number, y: number) {
 function redrawLines() {
     // I took influence from the for loop in redraw() provided by professor in quant-paint
     // https://quant-paint.glitch.me/paint1.html
-    console.log('displayList: ', displayList);
     displayList.forEach((line) => {
         line.display(ctx!);
     })
     if (pointer) {
         pointer.display(ctx!);
     }
-    // stickerList.forEach((sticker) => {
-    //     sticker.display(ctx!);
-    // })
-
 }
 
 function clearCanvas() {
@@ -391,13 +374,6 @@ function undoDraw() {
 function clearRedoStack() {
     redoStack = [];
 }
-
-function debugShow() {
-    console.log('isSticker: ', isSticker,' isPlacing: ', isPlacing, ' isDrawing: ', isDrawing);
-
-
-}
-
 
 function redoDraw() {
     const lastElement = redoStack.pop()!;
