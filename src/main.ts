@@ -149,7 +149,7 @@ class Image implements Context {
         // display the sticker type
         // https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/fillText
         if (isSticker) {
-            context.font = "30px serif";
+            context.font = "50px serif";
             context.fillText(this.emoji, this.position.x, this.position.y);
         }
     }
@@ -237,12 +237,12 @@ redo.addEventListener("click", () => {
 });
 
 thin.addEventListener("click", () => {
-    lineWidth = 0.5;
+    lineWidth = 1;
     removeSticker();
 })
 
 thick.addEventListener("click", () => {
-    lineWidth = 2;
+    lineWidth = 3;
     removeSticker();
 })
 
@@ -396,16 +396,6 @@ function activateSticker(emoji: string) {
         const previewPosition = { x: 123, y: 123 }
         isSticker = true;
         sticker = new Sticker(previewPosition, emoji);
-        // if (sticker && isSticker) {
-        //     if (sticker.image == emoji)
-        //         // if current sticker is equal to the current item then do not create a sticker
-        //         isSticker = false;
-        //     else {
-        //         sticker = new Sticker(position, emoji);
-        //     }
-        // } else {
-        //     sticker = new Sticker(position, emoji);
-        // }
 }
 
 let newStickerValue = "NULL";
