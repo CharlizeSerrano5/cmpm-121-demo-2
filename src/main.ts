@@ -22,6 +22,9 @@ const thick = document.createElement("button");
 const anguished = document.createElement("button");
 const flushed = document.createElement("button");
 const skull = document.createElement("button");
+const slider = document.createElement("range");
+// const slider = document.querySelector("#pi_input");
+
 
 document.title = APP_NAME;
 app.innerHTML = APP_NAME;
@@ -47,8 +50,7 @@ let sticker: Sticker;
 let tempSticker: Sticker;
 
 const cursor = { x: 0, y: 0 };
-// I referenced code from https://quant-paint.glitch.me/paint1.html
-// to create a cursor and set it every time the mouse is being used
+// I referenced code from https://quant-paint.glitch.me/paint1.html to create a cursor and set it every time the mouse is being used
 
 interface Point {
     x: number;
@@ -76,17 +78,22 @@ class StickerButton {
 
 class Line implements Context {
     lineArray: Point[];
-    lineWidth: number;
-    constructor(lineArray: Point[], lineWidth: number) {
+    lineWidth: number;;
+    color: string;
+    constructor(lineArray: Point[], lineWidth: number, color: string) {
         this.lineArray = lineArray;
         this.lineWidth = lineWidth;
+        this.color = color;
     }
     display(context: CanvasRenderingContext2D): void {
         if (this.lineArray.length > 1) {
             const {x, y} = this.lineArray[0];
             context.beginPath();
             context.lineWidth = this.lineWidth;
-            context.strokeStyle = "black";
+            if (!this.color) {
+                this.color = "black";
+            }
+            context.strokeStyle = this.color;
             context.moveTo(x, y);
             this.lineArray.forEach((point) => {
                 context.lineTo(point.x, point.y);
@@ -99,16 +106,18 @@ class Line implements Context {
 class Marker {
     position: Point;
     lineWidth: number;
-    constructor(position: Point, lineWidth: number) {
+    color: string;
+    constructor(position: Point, lineWidth: number, color: string) {
         this.position = position;
         this.lineWidth = lineWidth;
+        this.color = color;
         addPoint(this.position.x, this.position.y);
     }
     
     drag(x: number, y: number): void {
         // grows/extends the line as the user drags their mouse cursor
         addPoint(x, y);
-        const lineObject = new Line(mousePoints, this.lineWidth);
+        const lineObject = new Line(mousePoints, this.lineWidth, this.color);
         lineObject.display(ctx!);
     }
 }
@@ -124,7 +133,7 @@ class Pointer implements Context{
         if (isPointing) {
             if (sticker && isSticker && !isDrawing) {
                 const stickerImage = new Image(this.position, sticker.image);
-                stickerImage.display(ctx!);
+                stickerImage.point(ctx!);
                 sticker.position = {x: this.position.x, y: this.position.y};
             } else {
                 context.beginPath();
@@ -148,9 +157,13 @@ class Image implements Context {
     display(context: CanvasRenderingContext2D): void {
         // display the sticker type
         // https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/fillText
+        context.font = "50px serif";
+        context.fillText(this.emoji, this.position.x, this.position.y);
+
+    }
+    point(context: CanvasRenderingContext2D) {
         if (isSticker) {
-            context.font = "50px serif";
-            context.fillText(this.emoji, this.position.x, this.position.y);
+            this.display(context);
         }
     }
 }
@@ -189,8 +202,9 @@ const stickerImageList: StickerButton[] =
 
 let marker : Marker;
 let pointer : Pointer;
-let lineWidth = 1;
 
+let lineWidth = 1;
+let lineColor = "black";
 
 let redoStack: Array<Line|Image> = [];
 let displayList: Array<Line|Image> = [];
@@ -238,11 +252,13 @@ redo.addEventListener("click", () => {
 
 thin.addEventListener("click", () => {
     lineWidth = 1;
+    lineColor = "red";
     removeSticker();
 })
 
 thick.addEventListener("click", () => {
     lineWidth = 3;
+    lineColor = "blue"
     removeSticker();
 })
 
@@ -251,7 +267,7 @@ canvas.addEventListener("mousedown", (e) => {
     // https://developer.mozilla.org/en-US/docs/Web/API/Element/mousemove_event
     offsetCursor(e);
     const position: Point = { x: cursor.x, y: cursor.y};
-    marker = new Marker(position, lineWidth);
+    marker = new Marker(position, lineWidth, lineColor);
     isPointing = false;
 
     if (isSticker) {
@@ -332,10 +348,8 @@ function addPoint(x: number, y: number) {
 function redrawLines() {
     // I took influence from the for loop in redraw() provided by professor in quant-paint
     // https://quant-paint.glitch.me/paint1.html
-    console.log('displayList: ', displayList);
-    displayList.forEach((line) => {
-        console.log('line: ', line);
-        line.display(ctx!);
+    displayList.forEach((object) => {
+        object.display(ctx!);
     })
     if (pointer) {
         pointer.display(ctx!);
@@ -352,7 +366,7 @@ function deleteCanvasDetails() {
 }
 
 function addLine() {
-    const lineObject = new Line(mousePoints, lineWidth);
+    const lineObject = new Line(mousePoints, lineWidth, lineColor);
     displayList.push(lineObject);
     clearRedoStack();
 }
@@ -429,6 +443,8 @@ app.append(clear);
 app.append(undo);
 app.append(redo);
 app.append(create);
+app.append(slider);
+
 app.append(download);
 
 for (const sticker of stickerImageList) {
