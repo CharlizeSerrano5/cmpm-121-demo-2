@@ -16,6 +16,7 @@ const clear = document.createElement("button");
 const undo = document.createElement("button");
 const redo = document.createElement("button");
 const create = document.createElement("button");
+const download = document.createElement("button");
 const thin = document.createElement("button");
 const thick = document.createElement("button");
 const anguished = document.createElement("button");
@@ -24,6 +25,7 @@ const skull = document.createElement("button");
 
 document.title = APP_NAME;
 app.innerHTML = APP_NAME;
+download.innerHTML = "Download";
 clear.innerHTML = "Clear";
 undo.innerHTML = "Undo";
 redo.innerHTML = "Redo";
@@ -208,6 +210,9 @@ create.addEventListener("click", () => {
     promptSticker();
 });
 
+download.addEventListener("click", () => {
+    downloadCanvas();
+});
 
 clear.addEventListener("click", () => {
     clearCanvas()
@@ -410,6 +415,22 @@ function promptSticker() {
     activateSticker(newStickerValue);
 }
 
+function downloadCanvas() {
+    const biggerCanvas = document.createElement("canvas");
+    biggerCanvas.width = 1024;
+    biggerCanvas.height = 1024;
+    const newCtx = biggerCanvas.getContext("2d");
+    // https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/drawImage
+    // used to rescale the original canvas and draw it onto the new canvas
+    newCtx!.drawImage(canvas, 0, 0, 1024, 1024);
+    const anchor = document.createElement("a");
+    ctx?.scale(1024, 1024);
+    redrawLines();
+    anchor.href = biggerCanvas.toDataURL("image/png");
+    anchor.download = "sketchpad.png";
+    anchor.click();
+}
+
 app.append(header);
 app.append(canvas);
 app.append(thin);
@@ -418,6 +439,7 @@ app.append(clear);
 app.append(undo);
 app.append(redo);
 app.append(create);
+app.append(download);
 
 for (const sticker of stickerImageList) {
     app.append(sticker.button);
