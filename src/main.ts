@@ -15,6 +15,7 @@ const ctx = canvas.getContext("2d");
 const clear = document.createElement("button");
 const undo = document.createElement("button");
 const redo = document.createElement("button");
+const create = document.createElement("button");
 const thin = document.createElement("button");
 const thick = document.createElement("button");
 const anguished = document.createElement("button");
@@ -28,6 +29,7 @@ undo.innerHTML = "Undo";
 redo.innerHTML = "Redo";
 thin.innerHTML = "Thin";
 thick.innerHTML = "Thick";
+create.innerHTML = "Create Sticker";
 
 
 anguished.innerHTML = "😧";
@@ -190,34 +192,22 @@ let lineWidth = 1;
 
 let redoStack: Array<Line|Image> = [];
 let displayList: Array<Line|Image> = [];
-const stickerList: Array<Image> = [];
 
 let mousePoints: Array<Point> = [];
 
 const drawingChanged = new Event("drawing-changed");
 const toolMoved = new Event("tool-moved");
-// after each point dispatch a drawing changed event
 
 stickerImageList.map((item) => {
     item.button.addEventListener("click", () => {
-        canvas.dispatchEvent(toolMoved);
-        isPointing = false;
-        isDrawing = false;
-        const position = { x: 123, y: 123 }
-        isSticker = true;
-        if (sticker && isSticker) {
-            if (sticker.image == item.name)
-                isSticker = false;
-            else {
-                sticker = new Sticker(position, item.emoji);
-
-            }
-        } else {
-            sticker = new Sticker(position, item.emoji);
-
-        }
+        activateSticker(item.emoji);
     })
 })
+
+create.addEventListener("click", () => {
+    promptSticker();
+});
+
 
 clear.addEventListener("click", () => {
     clearCanvas()
@@ -254,12 +244,10 @@ thick.addEventListener("click", () => {
 canvas.addEventListener("mousedown", (e) => {
     // I took reference from the mouse move event documentation
     // https://developer.mozilla.org/en-US/docs/Web/API/Element/mousemove_event
-    // TODO: cursor is still visible when it is down but hasnt moved
     offsetCursor(e);
     const position: Point = { x: cursor.x, y: cursor.y};
     marker = new Marker(position, lineWidth);
     isPointing = false;
-    isDrawing = true; // check if drawing when user has clicked
 
     if (isSticker) {
         isPlacing = true;
@@ -267,6 +255,9 @@ canvas.addEventListener("mousedown", (e) => {
     }
     if (isPlacing) {
         tempSticker = new Sticker(position, sticker.image);
+    } else {
+        isDrawing = true; // check if drawing when user has clicked
+
     }
 });
 
@@ -336,7 +327,9 @@ function addPoint(x: number, y: number) {
 function redrawLines() {
     // I took influence from the for loop in redraw() provided by professor in quant-paint
     // https://quant-paint.glitch.me/paint1.html
+    console.log('displayList: ', displayList);
     displayList.forEach((line) => {
+        console.log('line: ', line);
         line.display(ctx!);
     })
     if (pointer) {
@@ -361,8 +354,9 @@ function addLine() {
 
 function addSticker() {
     const stickerImage = new Image(tempSticker.position, sticker.image);
-    stickerList.push(stickerImage);
     displayList.push(stickerImage);
+    canvas.dispatchEvent(drawingChanged);
+
 }
 
 
@@ -390,6 +384,32 @@ function removeSticker() {
     isSticker = false;
 }
 
+function activateSticker(emoji: string) {
+    canvas.dispatchEvent(toolMoved);
+        isPointing = false;
+        isDrawing = false;
+        const previewPosition = { x: 123, y: 123 }
+        isSticker = true;
+        sticker = new Sticker(previewPosition, emoji);
+        // if (sticker && isSticker) {
+        //     if (sticker.image == emoji)
+        //         // if current sticker is equal to the current item then do not create a sticker
+        //         isSticker = false;
+        //     else {
+        //         sticker = new Sticker(position, emoji);
+        //     }
+        // } else {
+        //     sticker = new Sticker(position, emoji);
+        // }
+}
+
+let newStickerValue = "NULL";
+function promptSticker() {
+    const newSticker: string = prompt("Create a new sticker", newStickerValue)!;
+    newStickerValue = newSticker;
+    activateSticker(newStickerValue);
+}
+
 app.append(header);
 app.append(canvas);
 app.append(thin);
@@ -397,6 +417,8 @@ app.append(thick);
 app.append(clear);
 app.append(undo);
 app.append(redo);
+app.append(create);
+
 for (const sticker of stickerImageList) {
     app.append(sticker.button);
 }
