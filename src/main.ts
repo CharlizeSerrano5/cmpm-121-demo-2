@@ -48,6 +48,7 @@ let isPlacing = false;
 // https://www.javatpoint.com/typescript-union#:~:text=In%20other%20words%2C%20TypeScript%20can,')%20symbol%20between%20the%20types.
 let sticker: Sticker;
 let tempSticker: Sticker;
+let rotation: number;
 
 const cursor = { x: 0, y: 0 };
 // I referenced code from https://quant-paint.glitch.me/paint1.html to create a cursor and set it every time the mouse is being used
@@ -132,14 +133,14 @@ class Pointer implements Context{
         // I use w3schools to draw a circle
         if (isPointing) {
             if (sticker && isSticker && !isDrawing) {
-                const stickerImage = new Image(this.position, sticker.image);
+                const stickerImage = new Image(this.position, sticker.image, rotation);
                 stickerImage.point(ctx!);
                 sticker.position = {x: this.position.x, y: this.position.y};
             } else {
                 context.beginPath();
                 context.arc(this.position.x, this.position.y, lineWidth * 20, 0, 2 * Math.PI);
                 context.lineWidth = 1;
-                context.strokeStyle = "red";
+                context.strokeStyle = lineColor;
                 context.stroke();
             }
             
@@ -150,16 +151,24 @@ class Pointer implements Context{
 class Image implements Context {
     position: Point;
     emoji: string;
-    constructor(position: Point, emoji: string) {
+    rotation: number;
+    constructor(position: Point, emoji: string, rotation: number) {
         this.position = position;
         this.emoji = emoji;
+        this.rotation = rotation;
     }
     display(context: CanvasRenderingContext2D): void {
         // display the sticker type
-        // https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/fillText
+        // https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/rotate
+        context.save();
+        context.translate(this.position.x, this.position.y);
+        context.rotate((Math.PI * this.rotation * 360)/180);
+        context.translate(-this.position.x, -this.position.y);
         context.font = "50px serif";
-        context.fillText(this.emoji, this.position.x, this.position.y);
+        // https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/fillText
 
+        context.fillText(this.emoji, this.position.x, this.position.y);
+        context.restore();
     }
     point(context: CanvasRenderingContext2D) {
         if (isSticker) {
@@ -171,10 +180,12 @@ class Image implements Context {
 class Sticker {
     position: Point;
     image: string;
-    constructor(position: Point, image: string) {
+    rotation: number;
+    constructor(position: Point, image: string, rotation: number) {
         this.position = position;
         this.image = image;
-        const stickerImage = new Image(this.position, this.image);
+        this.rotation = rotation;
+        const stickerImage = new Image(this.position, this.image, this.rotation);
         stickerImage.display(ctx!);
 
     }
@@ -186,7 +197,7 @@ class Sticker {
         ctx!.translate(offsetX, offsetY);
         this.position.x = x;
         this.position.y = y;
-        const stickerImage = new Image(this.position, this.image);
+        const stickerImage = new Image(this.position, this.image, this.rotation);
         stickerImage.display(ctx!);
         // redrawLines();
         ctx!.resetTransform();
@@ -199,18 +210,13 @@ class Sticker {
 const stickerImageList: StickerButton[] = 
     [ new StickerButton("anguished", "😧"), new StickerButton("flushed", "😳"), new StickerButton("skull", "💀")];
 
-
 let marker : Marker;
 let pointer : Pointer;
-
 let lineWidth = 1;
 let lineColor = "black";
-
 let redoStack: Array<Line|Image> = [];
 let displayList: Array<Line|Image> = [];
-
 let mousePoints: Array<Point> = [];
-
 const drawingChanged = new Event("drawing-changed");
 const toolMoved = new Event("tool-moved");
 
@@ -275,7 +281,7 @@ canvas.addEventListener("mousedown", (e) => {
         isDrawing = false;
     }
     if (isPlacing) {
-        tempSticker = new Sticker(position, sticker.image);
+        tempSticker = new Sticker(position, sticker.image, rotation);
     } else {
         isDrawing = true; // check if drawing when user has clicked
 
@@ -299,6 +305,7 @@ canvas.addEventListener("mousemove", (e: MouseEvent) => {
     canvas.dispatchEvent(toolMoved);
     if (isPlacing && tempSticker) {
         tempSticker.drag(e.offsetX, e.offsetY);
+        // tempSticker.rotate(rotation);
     } else if (isDrawing) {
         // save user's mouse positions into an array of arrays of points
         marker.drag(e.offsetX, e.offsetY);
@@ -339,6 +346,10 @@ canvas.addEventListener("drawing-changed", () => {
     redrawLines();
 })
 
+function randomizeRotation() {
+  rotation = Math.random();
+}
+
 function addPoint(x: number, y: number) {
     const newPoint = {x, y};
     mousePoints.push(newPoint);
@@ -372,7 +383,7 @@ function addLine() {
 }
 
 function addSticker() {
-    const stickerImage = new Image(tempSticker.position, sticker.image);
+    const stickerImage = new Image(tempSticker.position, sticker.image, sticker.rotation);
     displayList.push(stickerImage);
     canvas.dispatchEvent(drawingChanged);
 
@@ -405,11 +416,13 @@ function removeSticker() {
 
 function activateSticker(emoji: string) {
     canvas.dispatchEvent(toolMoved);
-        isPointing = false;
-        isDrawing = false;
-        const previewPosition = { x: 123, y: 123 }
-        isSticker = true;
-        sticker = new Sticker(previewPosition, emoji);
+    isPointing = false;
+    isDrawing = false;
+    const previewPosition = { x: 123, y: 123 }
+    isSticker = true;
+    randomizeRotation();
+
+    sticker = new Sticker(previewPosition, emoji, rotation);
 }
 
 let newStickerValue = "NULL";
