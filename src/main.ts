@@ -79,7 +79,6 @@ class StickerButton {
 	}
 }
 
-
 class Line implements Context {
 	lineArray: Point[];
 	lineWidth: number;;
@@ -452,6 +451,9 @@ function promptSticker() {
 	const newSticker: string = prompt("Create a new sticker", newStickerValue)!;
 	newStickerValue = newSticker;
 	const newStickerButton = new StickerButton(newStickerValue, newStickerValue)
+	newStickerButton.button.addEventListener("click", () => {
+		activateSticker(newStickerButton.emoji);
+	})
 	stickerImageList.push()
 	dropdownContent.append(newStickerButton.button)
 	activateSticker(newStickerValue);
@@ -476,34 +478,13 @@ function downloadCanvas() {
 const dropdown = document.createElement('div');
 dropdown.classList.add('dropdown');
 
-// Create the button for the dropdown trigger
 const dropbtn = document.createElement('button');
 dropbtn.classList.add('dropbtn');
 dropbtn.innerText = 'Dropdown';
 
-// Create the dropdown content div
 const dropdownContent = document.createElement('div');
 dropdownContent.classList.add('dropdown-content');
 
-// Create the links inside the dropdown
-// const link1 = document.createElement('a');
-// link1.href = '#';
-// link1.innerText = 'Link 1';
-
-// const link2 = document.createElement('a');
-// link2.href = '#';
-// link2.innerText = 'Link 2';
-
-// const link3 = document.createElement('a');
-// link3.href = '#';
-// link3.innerText = 'Link 3';
-
-// // Append the links to the dropdown content div
-// dropdownContent.appendChild(link1);
-// dropdownContent.appendChild(link2);
-// dropdownContent.appendChild(link3);
-
-// Append the button and the dropdown content to the dropdown container
 dropdown.append(dropbtn);
 dropdown.append(dropdownContent);
 
