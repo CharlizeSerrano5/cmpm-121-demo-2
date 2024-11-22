@@ -10,7 +10,7 @@ header.innerHTML = gameTitle;
 // new function by brian feng, adds some space between buttons/other HTMLElements. 
 function addSpacer(): HTMLDivElement {
     const spacer = document.createElement("div");
-    spacer.style.marginTop = "15px";
+    spacer.style.marginTop = "10px";
     app.append(spacer);
     return spacer;
 }   
@@ -36,10 +36,10 @@ const slider = document.createElement("range");
 
 document.title = APP_NAME;
 app.innerHTML = APP_NAME;
-download.innerHTML = "Download";
-clear.innerHTML = "Clear";
-undo.innerHTML = "Undo";
-redo.innerHTML = "Redo";
+download.innerHTML = "💾";
+clear.innerHTML = "🗑️";
+undo.innerHTML = "↩";
+redo.innerHTML = "↪";
 thin.innerHTML = "Thin";
 thick.innerHTML = "Thick";
 create.innerHTML = "Create Sticker";
@@ -146,7 +146,7 @@ class Pointer implements Context{
                 sticker.position = {x: this.position.x, y: this.position.y};
             } else {
                 context.beginPath();
-                context.arc(this.position.x, this.position.y, lineWidth * 20, 0, 2 * Math.PI);
+                context.arc(this.position.x, this.position.y, lineWidth * 10, 0, 2 * Math.PI);
                 context.lineWidth = 1;
                 context.strokeStyle = lineColor;
                 context.stroke();
