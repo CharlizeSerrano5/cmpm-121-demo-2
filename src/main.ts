@@ -100,7 +100,7 @@ class Line implements Context {
             context.beginPath();
             context.lineWidth = this.lineWidth;
             if (!this.color) {
-                this.color = "black";
+                this.color = "red";
             }
             context.strokeStyle = this.color;
             context.moveTo(x, y);
@@ -221,7 +221,7 @@ const stickerImageList: StickerButton[] =
 let marker : Marker;
 let pointer : Pointer;
 let lineWidth = 1;
-let lineColor = "black";
+let lineColor = "red";
 let redoStack: Array<Line|Image> = [];
 let displayList: Array<Line|Image> = [];
 let mousePoints: Array<Point> = [];
