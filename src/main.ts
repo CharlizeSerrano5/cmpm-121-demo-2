@@ -7,6 +7,14 @@ const gameTitle = "Drawing Game!"
 const header = document.createElement("h1");
 header.innerHTML = gameTitle;
 
+// new function by brian feng, adds some space between buttons/other HTMLElements. 
+function addSpacer(): HTMLDivElement {
+    const spacer = document.createElement("div");
+    spacer.style.marginTop = "15px";
+    app.append(spacer);
+    return spacer;
+}   
+
 const canvas = document.createElement("canvas");
 
 canvas.width = 256;
@@ -450,15 +458,19 @@ function downloadCanvas() {
 
 app.append(header);
 app.append(canvas);
+addSpacer();
 app.append(thin);
 app.append(thick);
+addSpacer();
 app.append(clear);
 app.append(undo);
 app.append(redo);
+addSpacer();
 app.append(create);
 app.append(slider);
-
+addSpacer();
 app.append(download);
+addSpacer();
 
 for (const sticker of stickerImageList) {
     app.append(sticker.button);
