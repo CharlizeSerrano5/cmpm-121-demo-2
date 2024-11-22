@@ -146,7 +146,7 @@ class Pointer implements Context{
                 sticker.position = {x: this.position.x, y: this.position.y};
             } else {
                 context.beginPath();
-                context.arc(this.position.x, this.position.y, lineWidth * 10, 0, 2 * Math.PI);
+                context.arc(this.position.x, this.position.y, lineWidth * 8, 0, 2 * Math.PI);
                 context.lineWidth = 1;
                 context.strokeStyle = lineColor;
                 context.stroke();
