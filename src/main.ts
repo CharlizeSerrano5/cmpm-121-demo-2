@@ -480,7 +480,7 @@ dropdown.classList.add('dropdown');
 
 const dropbtn = document.createElement('button');
 dropbtn.classList.add('dropbtn');
-dropbtn.innerText = 'Dropdown';
+dropbtn.innerText = 'Emojis';
 
 const dropdownContent = document.createElement('div');
 dropdownContent.classList.add('dropdown-content');
